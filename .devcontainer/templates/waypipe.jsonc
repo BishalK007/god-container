@@ -1,0 +1,13 @@
+{
+    "initializeCommand": "python3 .devcontainer/cmd/scripts/initializeCommand.py",
+    "runArgs": [
+        "--volume=/tmp/waypipe.sock:/tmp/waypipe.sock",
+        "--env=WAYLAND_DISPLAY=waypipe",
+        "--env=XDG_RUNTIME_DIR=/tmp"
+    ],
+    "remoteEnv": {
+        "WAYLAND_DISPLAY": "waypipe",
+        "XDG_RUNTIME_DIR": "/tmp"
+    },
+    "postCreateCommand": "apt-get install -y waypipe xwayland thunar  &&  echo 'alias wp=\"waypipe --compress zstd=3 --socket /tmp/waypipe/waypipe.sock server -- \"' >> ~/.bashrc"
+}

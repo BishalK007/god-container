@@ -1,0 +1,21 @@
+{
+    "name": "Wayland GUI Container",
+    "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+    "runArgs": [
+        "--volume=/tmp/waypipe.sock:/tmp/waypipe.sock",
+        "--env=WAYLAND_DISPLAY=waypipe",
+        "--env=XDG_RUNTIME_DIR=/tmp",
+        "--user=1000:100"
+    ],
+    "features": {
+        "ghcr.io/devcontainers/features/java:1": {},
+        "ghcr.io/devcontainers-extra/features/maven-sdkman:2": {}
+    },
+    "postCreateCommand": "apt-get update && apt-get install -y waypipe xwayland thunar  &&  echo 'alias wp=\"waypipe --compress zstd=3 --socket /tmp/waypipe/waypipe.sock server -- \"' >> ~/.bashrc && apt-get install -y firefox-esr",
+    "initializeCommand": "python3 .devcontainer/cmd/scripts/initializeCommand.py",
+    "remoteEnv": {
+        "WAYLAND_DISPLAY": "waypipe",
+        "XDG_RUNTIME_DIR": "/tmp"
+    },
+    "remoteUser": "vscode"
+}
