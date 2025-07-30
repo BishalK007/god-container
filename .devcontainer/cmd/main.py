@@ -1,185 +1,132 @@
-# This is a helper python script to setup and connect to devcontainer
+#!/usr/bin/env python3
+"""
+Devcontainer God - Main Entry Point
+
+This is the main script for the Devcontainer God project, a comprehensive
+tool for setting up and connecting to VS Code devcontainers with advanced
+features like Waypipe support, automated package installation, and intelligent
+container discovery.
+
+Features:
+- Interactive devcontainer configuration with templates
+- Waypipe integration for GUI applications on Linux
+- Automated package discovery and installation
+- Smart container detection and connection
+- User and permission management
+- Feature integration from devcontainer marketplace
+
+Usage:
+    python main.py --conf    # Configure devcontainer.json
+    python main.py --conn    # Connect to running container
+
+Author: Devcontainer God Project
+Created: 2025-07-30
+Version: 1.0.0
+"""
+
 import argparse
-import subprocess
 import os
-from InquirerPy import inquirer
 from utils import utils
 from configure import handle_user, handle_waypipe, handle_add_feature, handle_add_programs
+from core.connection import handle_container_connection
 
+# Project paths
 script_path = os.path.dirname(os.path.abspath(__file__))
 devcontainer_path = os.path.dirname(script_path)
 print(f"Devcontainer root: {devcontainer_path}")
 
 
-
+def handle_configuration() -> None:
+    """
+    Handle the complete devcontainer configuration workflow.
     
-def handle_conf():
-    data1 = utils.load_jsonc(f"{devcontainer_path}/templates/main.jsonc")
-
-    # handle waypipe configuration
-    data1 = handle_waypipe.handle_waypipe(data1, devcontainer_path)
-
-    # Ask user for user configuration
-    data1 = handle_user.handle_user(data1, devcontainer_path)
-
-    # Ask user for dev-container features
-    data1 = handle_add_feature.handle_add_feature(data1)
-
-    # Ask user for programs
-    data1 = handle_add_programs.handle_add_programs(data1)
-
-    # Save the merged configuration
-    utils.save_jsonc(f"{devcontainer_path}/devcontainer.json", data1)
-
-
-def load_config():
-    """Load configuration from .conf file"""
-    conf_path = os.path.join(devcontainer_path, '.conf')
-    config = {}
+    This function orchestrates the entire configuration process:
+    1. Load base template (main.jsonc)
+    2. Configure Waypipe for GUI applications (Linux only)
+    3. Set up user permissions and UID/GID mapping
+    4. Add devcontainer features from marketplace
+    5. Install additional packages via apt
+    6. Save final configuration to devcontainer.json
     
-    if not os.path.exists(conf_path):
-        print(f"Configuration file not found: {conf_path}")
-        print("Please run with --conf first to configure the devcontainer")
-        return None
+    The configuration is built incrementally by merging JSON templates
+    and user preferences into a final devcontainer.json file.
+    """
+    print("🔧 Starting devcontainer configuration...")
     
-    try:
-        with open(conf_path, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
-                    config[key.strip()] = value.strip()
-        return config
-    except Exception as e:
-        print(f"Error reading config file: {e}")
-        return None
+    # Start with base template
+    data = utils.load_jsonc(f"{devcontainer_path}/templates/main.jsonc")
+    
+    # Step 1: Configure Waypipe for GUI applications
+    print("\n📺 Configuring Waypipe (GUI support)...")
+    data = handle_waypipe.handle_waypipe(data, devcontainer_path)
+    
+    # Step 2: Configure user settings and permissions
+    print("\n� Configuring user settings...")
+    data = handle_user.handle_user(data, devcontainer_path)
+    
+    # Step 3: Add devcontainer features
+    print("\n🔧 Adding devcontainer features...")
+    data = handle_add_feature.handle_add_feature(data)
+    
+    # Step 4: Install additional programs
+    print("\n📦 Installing additional programs...")
+    data = handle_add_programs.handle_add_programs(data)
+    
+    # Step 5: Save final configuration
+    print("\n💾 Saving configuration...")
+    utils.save_jsonc(f"{devcontainer_path}/devcontainer.json", data)
+    
+    print("✅ Devcontainer configuration completed successfully!")
+    print(f"📄 Configuration saved to: {devcontainer_path}/devcontainer.json")
 
 
-def find_containers(container_name):
-    """Find running containers matching the container name"""
-    try:
-        # Get all running containers
-        result = subprocess.run(['docker', 'ps', '--format', 'table {{.Names}}\t{{.ID}}\t{{.Image}}'], 
-                              capture_output=True, text=True)
-        
-        if result.returncode != 0:
-            print("Error running docker ps command")
-            return []
-        
-        containers = []
-        lines = result.stdout.strip().split('\n')[1:]  # Skip header
-        
-        for line in lines:
-            if line.strip():
-                parts = line.split('\t')
-                if len(parts) >= 3:
-                    name, container_id, image = parts[0], parts[1], parts[2]
-                    # Look for containers that match the pattern (usually contain project name)
-                    if 'vsc-' in name.lower() or container_name.lower().replace(' ', '-') in name.lower():
-                        containers.append({
-                            'name': name,
-                            'id': container_id,
-                            'image': image
-                        })
-        
-        return containers
-    except Exception as e:
-        print(f"Error finding containers: {e}")
-        return []
-
-
-def handle_conn():
-    """Handle connection to devcontainer"""
-    # Load configuration
-    config = load_config()
-    if not config:
-        return
+def main() -> None:
+    """
+    Main entry point for the Devcontainer God application.
     
-    container_name = config.get('CONTAINER_NAME', 'devcontainer')
-    remote_user = config.get('REMOTE_USER', 'vscode')
+    Parses command line arguments and routes to appropriate handlers:
+    - --conf: Launch configuration wizard
+    - --conn: Connect to running devcontainer
+    - No args: Show help and usage examples
+    """
+    parser = argparse.ArgumentParser(
+        description="Devcontainer God - Advanced devcontainer management tool",
+        epilog="""
+Examples:
+  %(prog)s --conf    Configure a new devcontainer with interactive wizard
+  %(prog)s --conn    Connect to a running devcontainer with smart detection
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     
-    print(f"Looking for containers matching: {container_name}")
+    parser.add_argument(
+        '--conf', 
+        action='store_true', 
+        help='Launch interactive configuration wizard to set up devcontainer.json'
+    )
     
-    # Find matching containers
-    containers = find_containers(container_name)
+    parser.add_argument(
+        '--conn', 
+        action='store_true', 
+        help='Connect to running devcontainer with intelligent container detection'
+    )
     
-    if not containers:
-        print("No running devcontainers found.")
-        print("Make sure your devcontainer is running in VS Code.")
-        return
-    
-    # If multiple containers, let user choose
-    selected_container = None
-    if len(containers) == 1:
-        selected_container = containers[0]
-        print(f"Found container: {selected_container['name']}")
-    else:
-        print(f"Found {len(containers)} matching containers:")
-        choices = [f"{c['name']} (ID: {c['id'][:12]}) - {c['image']}" for c in containers]
-        
-        selection = inquirer.select(
-            message="Select container to connect to:",
-            choices=choices
-        ).execute()
-        
-        # Find the selected container
-        selected_index = choices.index(selection)
-        selected_container = containers[selected_index]
-    
-    # Get current directory name for workspace path
-    current_dir = os.path.basename(os.path.dirname(devcontainer_path))
-    workspace_path = f"/workspaces/{current_dir}"
-    
-    # Build docker exec command
-    docker_cmd = [
-        'docker', 'exec', '-it',
-        '--user', remote_user,
-        '-w', workspace_path,
-        selected_container['id'],
-        'bash'
-    ]
-    
-    print(f"Connecting to container {selected_container['name']} as user {remote_user}")
-    print(f"Working directory: {workspace_path}")
-    print("=" * 50)
-    
-    # Execute the command
-    try:
-        subprocess.run(docker_cmd)
-    except KeyboardInterrupt:
-        print("\nConnection closed.")
-    except Exception as e:
-        print(f"Error connecting to container: {e}")
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Devcontainer setup and connect helper")
-    parser.add_argument('--conf', action='store_true', help='Configure devcontainer.json file')
-    parser.add_argument('--conn', action='store_true', help='Connect to running devcontainer')
     args = parser.parse_args()
-
+    
     if args.conf:
-        print("=== Configuring Devcontainer ===")
-        handle_conf()
+        print("=== Devcontainer Configuration Wizard ===")
+        handle_configuration()
     elif args.conn:
-        print("=== Connecting to Devcontainer ===")
-        handle_conn()
+        print("=== Devcontainer Connection Manager ===")
+        handle_container_connection(devcontainer_path)
     else:
-        # Default behavior - show help
+        # Show help when no arguments provided
         parser.print_help()
-        print("\nExample usage:")
-        print("  python main.py --conf    # Configure devcontainer")
-        print("  python main.py --conn    # Connect to running container")
-
+        print("\n" + "="*60)
+        print("🚀 Welcome to Devcontainer God!")
+        print("📖 Get started by running one of the commands above.")
+        print("💡 Use --conf first to set up your devcontainer configuration.")
 
 
 if __name__ == "__main__":
     main()
-
-'''
- - Ask for base
- - Ask for customfeatures(waypipe, pipewire, minikube)
- - Ask for user configuration
- - Ask for features
- - Save the configuration to devcontainer.json
-'''
