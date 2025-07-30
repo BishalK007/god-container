@@ -79,12 +79,19 @@ def handle_user(data1, devcontainer_path):
             print(f"Custom gid: {gid}")
 
     if uid is not None or gid is not None:
+        # Only modify runArgs if user chose custom values
         # Use defaults if not set
         uid_val = uid if uid is not None else "1000"
         gid_val = gid if gid is not None else "1000"
         user_json['runArgs'] = [f"--user={uid_val}:{gid_val}"]
-        print(f"Set runArgs: {user_json['runArgs']}")
-        data1 = utils.merge_jsonc_data(data1, user_json)
+        print(f"Set custom runArgs: {user_json['runArgs']}")
+    else:
+        # User selected defaults for both UID and GID
+        # The template already has the correct default values, so no need to modify
+        print("Using default UID/GID from template (1000:1000)")
+    
+    # Always merge the user_json (which contains remoteUser and runArgs)
+    data1 = utils.merge_jsonc_data(data1, user_json)
 
     # Save configuration to .conf file
     save_config_file(data1, devcontainer_path)
