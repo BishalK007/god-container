@@ -196,7 +196,7 @@ def search_add_feature(data: List[Dict[str, str]]) -> List[str]:
     
     # First ask if they want to add features at all
     add_features = inquirer.confirm(
-        message="Would you like to add devcontainer features?",
+        message="Would you like to add devcontainer features? (Y/n)",
         default=True
     ).execute()
     
@@ -214,7 +214,7 @@ def search_add_feature(data: List[Dict[str, str]]) -> List[str]:
         message="Select devcontainer features to add (type to search):",
         choices=feature_choices,
         multiselect=True,
-        instruction="[Use <tab> to select, type to search, Up/Down to navigate, <enter> to confirm]",
+        instruction="\n[Use <tab> to select, type to search, Up/Down to navigate, <enter> to confirm]",
         border=True,
         validate=lambda result: len(result) >= 0,  # Allow empty selection
         invalid_message="Invalid selection"

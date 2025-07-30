@@ -14,32 +14,34 @@ from typing import List, Dict, Any
 from .config import normalize_container_name
 
 
-def find_containers(container_name: str) -> List[Dict[str, Any]]:
+def find_containers(container_name: str, custom_docker_container_name: str = "", directory_name: str = "") -> List[Dict[str, Any]]:
     """
     Discover all running Docker containers and classify them based on name matching.
     
     This function queries Docker for all running containers, then classifies them
-    as either "matches" (containers whose image names contain the search pattern)
-    or "others" (all other running containers). This is particularly useful for
-    VS Code devcontainers which follow the naming pattern:
-    vsc-{project-name}-{hash}-features-uid
+    as either "matches" (containers that match our search criteria) or "others" 
+    (all other running containers). It searches for matches in two ways:
+    1. Custom Docker container name (if provided in config)
+    2. Directory name pattern in image names (vsc-{directory-name}-{hash})
     
     Args:
-        container_name (str): The container name to search for (e.g., "God Container")
+        container_name (str): The display container name (e.g., "God Container")
+        custom_docker_container_name (str): Custom Docker container name from --name flag
+        directory_name (str): Project directory name for image pattern matching
         
     Returns:
         List[Dict[str, Any]]: List of container dictionaries with the following structure:
             {
-                'name': str,        # Docker assigned container name
+                'name': str,        # Docker assigned container name  
                 'id': str,          # Container ID (short form)
                 'image': str,       # Full image name
                 'status': str,      # Container status (e.g., "Up 5 minutes")
                 'created': str,     # Creation timestamp
-                'is_match': bool    # True if matches search pattern
+                'is_match': bool    # True if matches search criteria
             }
             
     Example:
-        containers = find_containers("God Container")
+        containers = find_containers("God Container", "my-custom-name", "my-project")
         matches = [c for c in containers if c['is_match']]
         others = [c for c in containers if not c['is_match']]
     """
@@ -53,10 +55,18 @@ def find_containers(container_name: str) -> List[Dict[str, Any]]:
         
         containers = []
         lines = result.stdout.strip().split('\n')
+        seen_container_ids = set()  # Track container IDs to avoid duplicates
         
-        # Create search pattern from container name
+        # Create search patterns
         search_pattern = normalize_container_name(container_name)
-        print(f"🔍 Searching for containers containing: '{search_pattern}'")
+        directory_pattern = directory_name.lower().replace(' ', '-') if directory_name else ""
+        
+        print(f"🔍 Searching for containers...")
+        if custom_docker_container_name:
+            print(f"   - Custom name: '{custom_docker_container_name}'")
+        if directory_pattern:
+            print(f"   - Directory pattern: 'vsc-{directory_pattern}-*'")
+        print(f"   - Fallback pattern: '{search_pattern}'")
         
         for line in lines:
             if line.strip():
@@ -65,9 +75,28 @@ def find_containers(container_name: str) -> List[Dict[str, Any]]:
                 if len(parts) >= 5:
                     name, container_id, image, status, created = parts[0], parts[1], parts[2], parts[3], parts[4]
                     
-                    # VS Code devcontainers have the pattern in the image name
-                    # Format: vsc-{project-name}-{hash}-features-uid
-                    is_match = search_pattern in image.lower() and 'vsc-' in image.lower()
+                    # Skip if we've already seen this container ID
+                    if container_id in seen_container_ids:
+                        continue
+                    seen_container_ids.add(container_id)
+                    
+                    # Check for matches using multiple criteria
+                    is_match = False
+                    
+                    # Priority 1: Match custom Docker container name (exact match)
+                    if custom_docker_container_name and name == custom_docker_container_name:
+                        is_match = True
+                        print(f"✅ Found custom name match: {name}")
+                    
+                    # Priority 2: Match directory pattern in image name  
+                    elif directory_pattern and f'vsc-{directory_pattern}-' in image.lower():
+                        is_match = True
+                        print(f"✅ Found directory pattern match: {image}")
+                    
+                    # Priority 3: Fallback to container name pattern in image
+                    elif search_pattern in image.lower() and 'vsc-' in image.lower():
+                        is_match = True
+                        print(f"✅ Found fallback pattern match: {image}")
                     
                     containers.append({
                         'name': name,
@@ -80,7 +109,20 @@ def find_containers(container_name: str) -> List[Dict[str, Any]]:
                 elif len(parts) >= 3:
                     # Fallback for containers with incomplete info
                     name, container_id, image = parts[0], parts[1], parts[2]
-                    is_match = search_pattern in image.lower() and 'vsc-' in image.lower()
+                    
+                    # Skip if we've already seen this container ID
+                    if container_id in seen_container_ids:
+                        continue
+                    seen_container_ids.add(container_id)
+                    
+                    # Apply same matching logic
+                    is_match = False
+                    if custom_docker_container_name and name == custom_docker_container_name:
+                        is_match = True
+                    elif directory_pattern and f'vsc-{directory_pattern}-' in image.lower():
+                        is_match = True
+                    elif search_pattern in image.lower() and 'vsc-' in image.lower():
+                        is_match = True
                     
                     containers.append({
                         'name': name,

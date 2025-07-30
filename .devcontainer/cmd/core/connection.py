@@ -42,13 +42,20 @@ def handle_container_connection(devcontainer_path: str) -> None:
         return
     
     container_name = config.get('CONTAINER_NAME')
+    custom_docker_container_name = config.get('CUSTOM_DOCKER_CONTAINER_NAME', '')
     remote_user = config.get('REMOTE_USER', 'vscode')
     
+    # Get directory name for pattern matching
+    directory_name = os.path.basename(os.path.dirname(devcontainer_path))
+    
     print(f"📋 Container Name from config: {container_name}")
+    if custom_docker_container_name:
+        print(f"🏷️  Custom Docker Name: {custom_docker_container_name}")
+    print(f"📁 Directory Name: {directory_name}")
     print(f"👤 Remote User: {remote_user}")
     
     # Step 2: Discover and categorize containers
-    all_containers = find_containers(container_name)
+    all_containers = find_containers(container_name, custom_docker_container_name, directory_name)
     
     if not all_containers:
         print("❌ No running containers found.")

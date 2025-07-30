@@ -26,7 +26,8 @@ Version: 1.0.0
 import argparse
 import os
 from utils import utils
-from configure import handle_user, handle_waypipe, handle_add_feature, handle_add_programs
+from utils.conf_manager import save_config_file
+from configure import handle_user, handle_waypipe, handle_add_feature, handle_add_programs, handle_container_name
 from core.connection import handle_container_connection
 
 # Project paths
@@ -45,10 +46,14 @@ def handle_configuration() -> None:
     3. Set up user permissions and UID/GID mapping
     4. Add devcontainer features from marketplace
     5. Install additional packages via apt
-    6. Save final configuration to devcontainer.json
+    6. Configure custom container name
+    7. Save final configuration to devcontainer.json
+    8. Create .conf file with final configuration values
     
     The configuration is built incrementally by merging JSON templates
-    and user preferences into a final devcontainer.json file.
+    and user preferences into a final devcontainer.json file. The .conf
+    file is created at the end to ensure it contains the most up-to-date
+    configuration values, especially the final container name.
     """
     print("🔧 Starting devcontainer configuration...")
     
@@ -71,12 +76,21 @@ def handle_configuration() -> None:
     print("\n📦 Installing additional programs...")
     data = handle_add_programs.handle_add_programs(data)
     
-    # Step 5: Save final configuration
+    # Step 5: Configure container name
+    print("\n🏷️  Configure container name...")
+    data, custom_docker_container_name = handle_container_name.handle_container_name(data)
+    
+    # Step 6: Save final configuration
     print("\n💾 Saving configuration...")
     utils.save_jsonc(f"{devcontainer_path}/devcontainer.json", data)
     
+    # Step 7: Create .conf file with final configuration
+    print("\n📋 Creating configuration file...")
+    save_config_file(data, devcontainer_path, custom_docker_container_name)
+    
     print("✅ Devcontainer configuration completed successfully!")
     print(f"📄 Configuration saved to: {devcontainer_path}/devcontainer.json")
+    print(f"📋 Config file saved to: {devcontainer_path}/.conf")
 
 
 def main() -> None:

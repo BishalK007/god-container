@@ -92,56 +92,5 @@ def handle_user(data1, devcontainer_path):
     
     # Always merge the user_json (which contains remoteUser and runArgs)
     data1 = utils.merge_jsonc_data(data1, user_json)
-
-    # Save configuration to .conf file
-    save_config_file(data1, devcontainer_path)
     
     return data1
-
-def save_config_file(data1, devcontainer_path):
-    """Save important configuration values to .conf file for later use"""
-    
-    # Extract important values from the devcontainer configuration
-    config_data = {
-        'REMOTE_USER': data1.get('remoteUser', 'vscode'),
-        'CONTAINER_NAME': data1.get('name', 'devcontainer'),
-        'IMAGE': data1.get('image', ''),
-        'USER_ID': '',
-        'GROUP_ID': ''
-    }
-    
-    # Extract user ID and group ID from runArgs if present
-    run_args = data1.get('runArgs', [])
-    for arg in run_args:
-        if arg.startswith('--user='):
-            user_info = arg.replace('--user=', '')
-            if ':' in user_info:
-                config_data['USER_ID'], config_data['GROUP_ID'] = user_info.split(':')
-            else:
-                config_data['USER_ID'] = user_info
-    
-    # Create .conf file content
-    conf_content = f"""# Devcontainer Configuration
-# Generated automatically - do not edit manually
-
-# User Configuration
-REMOTE_USER={config_data['REMOTE_USER']}
-USER_ID={config_data['USER_ID']}
-GROUP_ID={config_data['GROUP_ID']}
-
-# Container Configuration  
-CONTAINER_NAME={config_data['CONTAINER_NAME']}
-IMAGE={config_data['IMAGE']}
-
-# Usage Examples:
-# docker exec -it $(docker ps -q --filter "label=devcontainer.local_folder") bash
-# docker exec -it --user {config_data['REMOTE_USER']} $(docker ps -q --filter "name=vsc-") bash
-"""
-    
-    # Save to .devcontainer/.conf
-    conf_path = os.path.join(devcontainer_path, '.conf')
-    with open(conf_path, 'w') as f:
-        f.write(conf_content)
-    
-    print(f"Configuration saved to {conf_path}")
-    return conf_path
