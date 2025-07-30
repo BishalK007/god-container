@@ -1,11 +1,11 @@
 {
-  "name": "Wayland GUI Container",
-  "image": "mcr.microsoft.com/devcontainers/base:debian-bookworm",
+  "name": "God Container",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
   "runArgs": [
     
   ],
   "features": {
     
   },
-  "postCreateCommand": "apt-get update"
+  "postCreateCommand": "sudo apt-get update"
 }
