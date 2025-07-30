@@ -6,8 +6,7 @@ Docker containers from a categorized list. It uses InquirerPy to create
 an interactive selection menu with proper visual organization and
 non-selectable headers.
 
-Author: Devcontainer God Project
-Created: 2025-07-30
+
 """
 
 from typing import List, Dict, Any, Optional

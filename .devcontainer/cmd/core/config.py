@@ -5,8 +5,7 @@ This module handles loading, validating, and managing devcontainer configuration
 from the .conf file. It provides utilities for reading container settings,
 user preferences, and environment details.
 
-Author: Devcontainer God Project
-Created: 2025-07-30
+
 """
 
 import os

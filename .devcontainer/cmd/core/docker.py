@@ -6,8 +6,7 @@ Docker containers, specifically targeting VS Code devcontainers. It handles
 container detection, pattern matching, and provides structured data for
 container selection interfaces.
 
-Author: Devcontainer God Project
-Created: 2025-07-30
+
 """
 
 import subprocess

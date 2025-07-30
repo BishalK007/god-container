@@ -12,8 +12,7 @@ Features:
 - Linux host validation
 - Socket and display environment setup
 
-Author: Devcontainer God Project
-Created: 2025-07-30
+
 """
 
 from utils import utils

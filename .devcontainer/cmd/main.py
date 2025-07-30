@@ -19,8 +19,7 @@ Usage:
     python main.py --conf    # Configure devcontainer.json
     python main.py --conn    # Connect to running container
 
-Author: Devcontainer God Project
-Created: 2025-07-30
+
 Version: 1.0.0
 """
 

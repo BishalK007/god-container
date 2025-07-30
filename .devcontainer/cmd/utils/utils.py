@@ -5,8 +5,7 @@ This module provides utility functions for handling JSON with comments (JSONC)
 files and merging configuration data. It includes special handling for
 devcontainer-specific fields like postCreateCommand concatenation.
 
-Author: Devcontainer God Project
-Created: 2025-07-30
+
 """
 
 import commentjson

@@ -7,8 +7,7 @@ This module orchestrates the complete container connection workflow:
 3. Presenting user selection interface
 4. Executing container connection
 
-Author: Devcontainer God Project
-Created: 2025-07-30
+
 """
 
 import os
