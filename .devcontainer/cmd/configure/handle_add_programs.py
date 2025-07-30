@@ -65,11 +65,12 @@ def lazy_search_packages():
         program_count = len(all_programs)
         choices = [
             "--- Search for packages ---",
-            "--- Finish and select programs ---"
+            "--- Finish and select programs ---",
+            "--- Skip program installation ---"
         ]
         
         if program_count > 0:
-            choices.insert(0, f"--- View found packages ({program_count} available) ---")
+            choices.insert(-1, f"--- View found packages ({program_count} available) ---")
         
         action = inquirer.select(
             message="Choose an action:",
@@ -110,6 +111,10 @@ def lazy_search_packages():
                 print("No packages found yet. Please search for packages first.")
                 continue
             break
+        
+        elif action == "--- Skip program installation ---":
+            print("Skipping program installation. No additional packages will be installed.")
+            return []  # Return empty list to skip program installation
     
     return all_programs
 
@@ -122,6 +127,10 @@ def search_and_select_programs():
     
     # First, let user search for packages
     all_programs = lazy_search_packages()
+    
+    # If user chose to skip, return empty list
+    if not all_programs:
+        return []
     
     # Now let them select from all available programs
     choices = [f"{prog['name']} - {prog['description']}" for prog in all_programs]
@@ -151,13 +160,13 @@ def handle_add_programs(data1):
     selected_programs = search_and_select_programs()
     
     if not selected_programs:
-        print("No programs selected.")
+        print("No programs selected. Skipping package installation.")
         return data1
     
     print(f"\nSelected programs: {', '.join(selected_programs)}")
     
     # Create the install command
-    install_command = f"apt-get install -y {' '.join(selected_programs)}"
+    install_command = f"sudo apt-get install -y {' '.join(selected_programs)}"
     
     # Create the configuration to merge
     program_config = {
